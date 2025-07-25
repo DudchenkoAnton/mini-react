@@ -1,0 +1,115 @@
+/* ===== GLOBAL STYLES ===== */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Tahoma", "Segoe UI", sans-serif;
+  background: linear-gradient(135deg, #a7c2d8, #d6e3ef);
+  color: #111;
+}
+
+/* ===== APP CONTAINER ===== */
+.app {
+  width: 640px;
+  margin: 50px auto;
+  background-color: #d9d9d9;
+  border: 2px solid #ffffff;
+  border-radius: 8px;
+  box-shadow: inset -2px -2px 0 #808080, inset 2px 2px 0 #fff,
+    0 4px 10px rgba(0, 0, 0, 0.2);
+  padding: 15px;
+}
+
+/* ===== HEADER ===== */
+.header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #b0c4de;
+  border: 2px solid #fff;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 18px;
+  box-shadow: inset -2px -2px 0 #808080, inset 2px 2px 0 #fff;
+}
+
+/* LOGO */
+.logo {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+}
+
+/* ===== CLOCK ===== */
+.clock {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #e6e6e6;
+  padding: 10px 14px;
+  margin-bottom: 18px;
+  border-radius: 6px;
+  border: 2px solid #fff;
+  box-shadow: inset -2px -2px 0 #808080, inset 2px 2px 0 #fff;
+}
+
+.clock .value {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #222;
+}
+
+/* DAY/NIGHT ICON */
+.clock .icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: inset -1px -1px 2px #fff, inset 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.clock .icon.day {
+  background: radial-gradient(circle at 30% 30%, #fff7a8, #e2c038);
+}
+
+.clock .icon.night {
+  background: radial-gradient(circle at 40% 40%, #b0c4de, #496c99);
+}
+
+/* ===== LOTS ===== */
+.lots {
+  display: grid;
+  gap: 12px;
+}
+
+/* ===== SINGLE LOT ===== */
+.lot {
+  background: #f3f3f3;
+  padding: 12px;
+  border-radius: 6px;
+  border: 2px solid #fff;
+  box-shadow: inset -2px -2px 0 #808080, inset 2px 2px 0 #fff;
+  transition: transform 0.1s ease;
+}
+
+.lot:hover {
+  transform: translateY(-2px);
+}
+
+/* ===== LOT ELEMENTS ===== */
+.lot h1 {
+  margin: 5px 0;
+  font-size: 19px;
+  color: #1a2e70;
+}
+
+.lot .price {
+  font-weight: bold;
+  font-size: 17px;
+  color: #3b6e47;
+  margin-bottom: 4px;
+}
+
+.lot p {
+  margin: 0;
+  font-size: 14px;
+  color: #444;
+}
