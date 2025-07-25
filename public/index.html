@@ -2,33 +2,125 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width:device-width, initial-scale=1" />
     <title>Demo</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div class="app">
-      <header class="header">
-        <img class="logo" src="logo.png" />
-      </header>
+    <div id="root"></div>
+    <script>
+      let state = {
+        time: new Date(),
+        lots: [
+          {
+            id: 1,
+            title: "Apple",
+            description: "Apple description",
+            price: 16,
+          },
+          {
+            id: 2,
+            title: "Orange",
+            description: "Orange description",
+            price: 41,
+          },
+        ],
+      };
 
-      <div class="clock">
-        <span class="value">12:34:56 PM</span>
-        <span class="icon day"></span>
-      </div>
+      function App({ state }) {
+        const app = document.createElement("div");
+        app.className = "app";
+        app.append(Header());
+        app.append(Clock({ time: state.time }));
+        app.append(Lots({ lots: state.lots }));
 
-      <div class="lots">
-        <article class="lot">
-          <div class="price">16</div>
-          <h1>Apple</h1>
-          <p>Apple description</p>
-        </article>
-        <article class="lot">
-          <div class="price">41</div>
-          <h1>Orange</h1>
-          <p>Orange description</p>
-        </article>
-      </div>
-    </div>
+        return app;
+      }
+
+      function Header() {
+        const header = document.createElement("header");
+        header.className = "header";
+        header.append(Logo());
+        return header;
+      }
+
+      function Logo() {
+        const logo = document.createElement("img");
+        logo.className = "logo";
+        logo.src = "logo.png";
+        return logo;
+      }
+
+      function Clock({ time }) {
+        const node = document.createElement("div");
+        node.className = "clock";
+
+        const clockValue = document.createElement("span");
+        clockValue.className = "value";
+        clockValue.innerText = time?.toLocaleTimeString();
+        node.append(clockValue);
+
+        const clockIcon = document.createElement("span");
+        if (time?.getHours() >= 7 && time.getHours() <= 21) {
+          clockIcon.className = "icon day";
+        } else {
+          clockIcon.className = "icon night";
+        }
+        node.append(clockIcon);
+
+        return node;
+      }
+
+      function Lots({ lots }) {
+        const lotsList = document.createElement("div");
+        lotsList.className = "lots";
+
+        lots.forEach((lot) => {
+          lotsList.append(Lot({ lot: lot }));
+        });
+
+        return lotsList;
+      }
+
+      function Lot({ lot }) {
+        const node = document.createElement("article");
+        node.className = "lot";
+
+        const price = document.createElement("div");
+        price.className = "price";
+        price.innerText = lot.price;
+        node.append(price);
+
+        const name = document.createElement("h1");
+        name.innerText = lot.title;
+        node.append(name);
+
+        const description = document.createElement("p");
+        description.innerText = lot.description;
+        node.append(description);
+
+        return node;
+      }
+
+      renderView(state);
+
+      //  ####################################################################
+
+      function render(newDom, realDomRoot) {
+        realDomRoot.innerHTML = "";
+        realDomRoot.append(newDom);
+      }
+
+      function renderView(state) {
+        render(App({ state }), document.getElementById("root"));
+      }
+
+      //  ####################################################################
+
+      setInterval(() => {
+        state = { ...state, time: new Date() };
+        renderView(state);
+      }, 1000);
+    </script>
   </body>
 </html>
