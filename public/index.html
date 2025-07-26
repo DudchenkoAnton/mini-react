@@ -11,21 +11,49 @@
     <script>
       let state = {
         time: new Date(),
-        lots: [
-          {
-            id: 1,
-            title: "Apple",
-            description: "Apple description",
-            price: 16,
-          },
-          {
-            id: 2,
-            title: "Orange",
-            description: "Orange description",
-            price: 41,
-          },
-        ],
+        lots: null,
       };
+
+      //  ####################################################################
+
+      const API = {
+        get(url) {
+          return new Promise((resolve) => {
+            if (url === "lots") {
+              setTimeout(() => {
+                resolve([
+                  {
+                    id: 1,
+                    title: "Apple",
+                    description: "Apple description",
+                    price: 16,
+                  },
+                  {
+                    id: 2,
+                    title: "Orange",
+                    description: "Orange description",
+                    price: 41,
+                  },
+                ]);
+              }, 1000);
+            }
+          });
+        },
+      };
+
+      const Stream = {
+        subscribe(channel, callback) {
+          const [, lotId] = channel.split(":");
+          setInterval(() => {
+            callback({
+              id: parseInt(lotId),
+              price: Math.floor(Math.random() * 100),
+            });
+          }, 400);
+        },
+      };
+
+      //  ####################################################################
 
       function App({ state }) {
         const app = document.createElement("div");
@@ -72,6 +100,10 @@
       }
 
       function Lots({ lots }) {
+        if (!lots) {
+          return Loading();
+        }
+
         const lotsList = document.createElement("div");
         lotsList.className = "lots";
 
@@ -98,11 +130,15 @@
         const description = document.createElement("p");
         description.innerText = lot.description;
         node.append(description);
-
         return node;
       }
 
-      renderView(state);
+      function Loading() {
+        const node = document.createElement("div");
+        node.className = "loading";
+        node.innerText = "Loading...";
+        return node;
+      }
 
       //  ####################################################################
 
@@ -117,10 +153,29 @@
 
       //  ####################################################################
 
+      renderView(state);
+
       setInterval(() => {
         state = { ...state, time: new Date() };
         renderView(state);
       }, 1000);
+
+      API.get("lots").then((lots) => {
+        state = { ...state, lots };
+        renderView(state);
+
+        lots.forEach((lot) => {
+          Stream.subscribe(`Price:${lot.id}`, (data) => {
+            state = {
+              ...state,
+              lots: state.lots.map((l) =>
+                l.id === data.id ? { ...l, price: data.price } : l
+              ),
+            };
+            renderView(state);
+          });
+        });
+      });
     </script>
   </body>
 </html>
