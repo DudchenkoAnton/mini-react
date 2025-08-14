@@ -15,10 +15,37 @@
     <div id="root"></div>
 
     <script type="text/jsx">
-      let state = {
+      let initialState = {
         time: new Date(),
         lots: null,
       };
+
+      class Store {
+        constructor(state) {
+          this.state = state;
+          this.listeners = [];
+        }
+
+        subscribe(callback) {
+          this.listeners.push(callback);
+        }
+
+        getState() {
+          return this.state;
+        }
+
+        changeState(diff) {
+          this.state = {
+            ...this.state,
+            ...(typeof diff === "function" ? diff(this.state) : diff),
+          };
+          this.listeners.forEach((listener) => {
+            listener();
+          });
+        }
+      }
+
+      const store = new Store(initialState);
 
       //  ####################################################################
 
@@ -132,7 +159,7 @@
       function Lot({ lot, key }) {
         return (
           <article className="lot" key={key}>
-            <div className="price">lot.price</div>
+            <div className="price">{lot.price}</div>
             <h1>lot.title</h1>
             <p>lot.description</p>
           </article>
@@ -263,28 +290,32 @@
         render(<App state={state} />, document.getElementById("root"));
       }
 
+      store.subscribe(() => {
+        renderView(store.getState());
+      });
+
+      renderView(store.getState());
+
       //  ####################################################################
 
-      renderView(state);
-
       setInterval(() => {
-        state = { ...state, time: new Date() };
-        renderView(state);
+        store.changeState({
+          time: new Date(),
+        });
       }, 1000);
 
       API.get("lots").then((lots) => {
-        state = { ...state, lots };
-        renderView(state);
+        store.changeState({
+          lots,
+        });
 
         lots.forEach((lot) => {
           Stream.subscribe(`Price:${lot.id}`, (data) => {
-            state = {
-              ...state,
+            store.changeState((state) => ({
               lots: state.lots.map((l) =>
                 l.id === data.id ? { ...l, price: data.price } : l
               ),
-            };
-            renderView(state);
+            }));
           });
         });
       });
