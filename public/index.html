@@ -15,37 +15,115 @@
     <div id="root"></div>
 
     <script type="text/jsx">
-      let initialState = {
+      const SET_TIME = "SET_TIME";
+      const SET_LOTS = "SET_LOTS";
+      const CHANGE_LOT_PRICE = "CHANGE_LOT_PRICE";
+
+      const clockInitialState = {
         time: new Date(),
+      };
+
+      const auctionInitialState = {
         lots: null,
       };
 
+      function clockReducer(state = clockInitialState, action) {
+        switch (action.type) {
+          case SET_TIME:
+            return {
+              ...state,
+              time: action.time,
+            };
+          default:
+            return state;
+        }
+      }
+
+      function auctionReducer(state = auctionInitialState, action) {
+        switch (action.type) {
+          case SET_LOTS:
+            return {
+              ...state,
+              lots: action.lots,
+            };
+          case CHANGE_LOT_PRICE:
+            return {
+              ...state,
+              lots: state.lots.map((lot) =>
+                lot.id === action.id ? { ...lot, price: action.price } : lot
+              ),
+            };
+          default:
+            return state;
+        }
+      }
+
+      function combineReducers(reducers) {
+        return (state = {}, action) => {
+          const result = {};
+          Object.entries(reducers).forEach(([key, reducer]) => {
+            result[key] = reducer(state[key], action);
+          });
+          return result;
+        };
+      }
+
+      function setTime(time) {
+        return {
+          type: SET_TIME,
+          time,
+        };
+      }
+
+      function setLots(lots) {
+        return {
+          type: SET_LOTS,
+          lots,
+        };
+      }
+
+      function changeLotPrice(id, price) {
+        return {
+          type: CHANGE_LOT_PRICE,
+          id,
+          price,
+        };
+      }
+
       class Store {
-        constructor(state) {
-          this.state = state;
+        constructor(reducer, state) {
+          this.reducer = reducer;
+          this.state = reducer(state, { type: null });
           this.listeners = [];
         }
 
         subscribe(callback) {
           this.listeners.push(callback);
+
+          return () => {
+            const index = this.listeners.indexOf(callback);
+            this.listeners.splice(index, 1);
+          };
         }
 
         getState() {
           return this.state;
         }
 
-        changeState(diff) {
-          this.state = {
-            ...this.state,
-            ...(typeof diff === "function" ? diff(this.state) : diff),
-          };
+        dispatch(action) {
+          this.state = this.reducer(this.state, action);
           this.listeners.forEach((listener) => {
             listener();
           });
         }
       }
 
-      const store = new Store(initialState);
+      const store = new Store(
+        combineReducers({
+          clock: clockReducer,
+          auction: auctionReducer,
+        })
+      );
 
       //  ####################################################################
 
@@ -113,8 +191,8 @@
         return (
           <div className="app">
             <Header />
-            <Clock time={state.time} />
-            <Lots lots={state.lots} />
+            <Clock time={state.clock.time} />
+            <Lots lots={state.auction.lots} />
           </div>
         );
       }
@@ -290,7 +368,7 @@
         render(<App state={state} />, document.getElementById("root"));
       }
 
-      store.subscribe(() => {
+      const unsubscribe = store.subscribe(() => {
         renderView(store.getState());
       });
 
@@ -299,23 +377,15 @@
       //  ####################################################################
 
       setInterval(() => {
-        store.changeState({
-          time: new Date(),
-        });
+        store.dispatch(setTime(time));
       }, 1000);
 
       API.get("lots").then((lots) => {
-        store.changeState({
-          lots,
-        });
+        store.dispatch(setLots(lots));
 
         lots.forEach((lot) => {
           Stream.subscribe(`Price:${lot.id}`, (data) => {
-            store.changeState((state) => ({
-              lots: state.lots.map((l) =>
-                l.id === data.id ? { ...l, price: data.price } : l
-              ),
-            }));
+            store.dispatch(changeLotPrice(data.id, data.price));
           });
         });
       });
