@@ -10,6 +10,7 @@
       crossorigin
     ></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.js"></script>
+    <script src="https://unpkg.com/ionicons@5/dist/ionicons.js"></script>
   </head>
   <body>
     <div id="root"></div>
@@ -18,6 +19,8 @@
       const SET_TIME = "SET_TIME";
       const SET_LOTS = "SET_LOTS";
       const CHANGE_LOT_PRICE = "CHANGE_LOT_PRICE";
+      const FAVORITE_LOT = "FAVORITE_LOT";
+      const UNFAVORITE_LOT = "UNFAVORITE_LOT";
 
       const clockInitialState = {
         time: new Date(),
@@ -51,6 +54,20 @@
               ...state,
               lots: state.lots.map((lot) =>
                 lot.id === action.id ? { ...lot, price: action.price } : lot
+              ),
+            };
+          case FAVORITE_LOT:
+            return {
+              ...state,
+              lots: state.lots.map((lot) =>
+                lot.id === action.id ? { ...lot, favorite: true } : lot
+              ),
+            };
+          case UNFAVORITE_LOT:
+            return {
+              ...state,
+              lots: state.lots.map((lot) =>
+                lot.id === action.id ? { ...lot, favorite: false } : lot
               ),
             };
           default:
@@ -87,6 +104,20 @@
           type: CHANGE_LOT_PRICE,
           id,
           price,
+        };
+      }
+
+      function favoriteLot(id) {
+        return {
+          type: FAVORITE_LOT,
+          id,
+        };
+      }
+
+      function unfavoriteLot(id) {
+        return {
+          type: UNFAVORITE_LOT,
+          id,
         };
       }
 
@@ -129,7 +160,7 @@
 
       const API = {
         get(url) {
-          return new Promise((resolve) => {
+          return new Promise((resolve, reject) => {
             if (url === "lots") {
               setTimeout(() => {
                 resolve([
@@ -138,17 +169,40 @@
                     title: "Apple",
                     description: "Apple description",
                     price: 16,
+                    favorite: true,
                   },
                   {
                     id: 2,
                     title: "Orange",
                     description: "Orange description",
                     price: 41,
+                    favorite: false,
                   },
                 ]);
               }, 1000);
+            } else {
+              reject(new Error("Uknown address"));
             }
           });
+        },
+
+        post(url) {
+          if (/^\/lots\/(\d+)\/favorite$/.exec(url)) {
+            return new Promise((resolve) => {
+              setTimeout(() => {
+                resolve();
+              }, 500);
+            });
+          }
+          if (/^\/lots\/(\d+)\/unfavorite$/.exec(url)) {
+            return new Promise((resolve) => {
+              setTimeout(() => {
+                resolve();
+              }, 500);
+            });
+          }
+
+          throw new Error("Unknown address");
         },
       };
 
@@ -187,12 +241,16 @@
 
       //  ####################################################################
 
-      function App({ state }) {
+      function App({ state, favorite, unfavorite }) {
         return (
           <div className="app">
             <Header />
             <Clock time={state.clock.time} />
-            <Lots lots={state.auction.lots} />
+            <Lots
+              lots={state.auction.lots}
+              favorite={favorite}
+              unfavorite={unfavorite}
+            />
           </div>
         );
       }
@@ -220,7 +278,7 @@
         );
       }
 
-      function Lots({ lots }) {
+      function Lots({ lots, favorite, unfavorite }) {
         if (!lots) {
           return <Loading />;
         }
@@ -228,19 +286,50 @@
         return (
           <div className="lots">
             {lots.map((lot) => (
-              <Lot lot={lot} key={lot.id} />
+              <Lot
+                lot={lot}
+                key={lot.id}
+                favorite={favorite}
+                unfavorite={unfavorite}
+              />
             ))}
           </div>
         );
       }
 
-      function Lot({ lot, key }) {
+      function Lot({ lot, key, favorite, unfavorite }) {
         return (
-          <article className="lot" key={key}>
+          <article
+            className={"lot" + " " + (lot.favorite ? "favorite" : "")}
+            key={key}
+          >
             <div className="price">{lot.price}</div>
-            <h1>lot.title</h1>
-            <p>lot.description</p>
+            <h1>{lot.title}</h1>
+            <p>{lot.description}</p>
+            <Favorite
+              active={isFav(lot)}
+              favorite={() => favorite(lot.id)}
+              unfavorite={() => unfavorite(lot.id)}
+            />
           </article>
+        );
+      }
+
+      const isFav = (lot) => {
+        return lot.favorite;
+      };
+
+      function Favorite({ active, favorite, unfavorite }) {
+        return active ? (
+          <button type="button" className="unfavorite" onclick={unfavorite}>
+            <ion-icon name="heart-sharp" />
+            Unfavorite
+          </button>
+        ) : (
+          <button type="button" className="favorite" onclick={favorite}>
+            <ion-icon name="heart-outline" />
+            Favorite
+          </button>
         );
       }
 
@@ -364,20 +453,39 @@
         };
       }
 
-      function renderView(state) {
-        render(<App state={state} />, document.getElementById("root"));
+      function renderView(store) {
+        const favorite = (id) => {
+          API.post(`/lots/${id}/favorite`).then(() => {
+            store.dispatch(favoriteLot(id));
+          });
+        };
+
+        const unfavorite = (id) => {
+          API.post(`/lots/${id}/unfavorite`).then(() => {
+            store.dispatch(unfavoriteLot(id));
+          });
+        };
+
+        render(
+          <App
+            state={store.getState()}
+            favorite={favorite}
+            unfavorite={unfavorite}
+          />,
+          document.getElementById("root")
+        );
       }
 
       const unsubscribe = store.subscribe(() => {
-        renderView(store.getState());
+        renderView(store);
       });
 
-      renderView(store.getState());
+      renderView(store);
 
       //  ####################################################################
 
       setInterval(() => {
-        store.dispatch(setTime(time));
+        store.dispatch(setTime(new Date()));
       }, 1000);
 
       API.get("lots").then((lots) => {

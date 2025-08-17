@@ -94,6 +94,34 @@ body {
   transform: translateY(-2px);
 }
 
+.lot.favorite {
+  background: #ffd7cb;
+}
+
+button {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 0.8rem;
+  outline: none;
+}
+
+button * {
+  vertical-align: middle;
+}
+
+button.favorite {
+  background: #fff;
+  border: 1px solid #999;
+  color: #000;
+}
+
+button.unfavorite {
+  background: #fff;
+  border: 1px solid #ff8c68;
+  color: #7b0505;
+}
+
 /* ===== LOT ELEMENTS ===== */
 .lot h1 {
   margin: 5px 0;
