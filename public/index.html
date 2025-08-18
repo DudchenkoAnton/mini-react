@@ -4,15 +4,23 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width:device-width, initial-scale=1" />
     <title>Demo</title>
+    <link rel="stylesheet" href="https://unpkg.com/mocha@8/mocha.css" />
     <link rel="stylesheet" href="style.css" />
     <script
       src="https://unpkg.com/react@16/umd/react.development.js"
       crossorigin
     ></script>
+    <script
+      src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"
+      crossorigin
+    ></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.js"></script>
     <script src="https://unpkg.com/ionicons@5/dist/ionicons.js"></script>
+    <script src="https://unpkg.com/mocha@8/mocha.js"></script>
+    <script src="https://unpkg.com/chai@2/chai.js"></script>
   </head>
   <body>
+    <!-- <div id="mocha"></div> -->
     <div id="root"></div>
 
     <script type="text/jsx">
@@ -155,6 +163,9 @@
           auction: auctionReducer,
         })
       );
+      //  ####################################################################
+
+      const StoreContext = React.createContext();
 
       //  ####################################################################
 
@@ -241,16 +252,12 @@
 
       //  ####################################################################
 
-      function App({ state, favorite, unfavorite }) {
+      function App() {
         return (
           <div className="app">
             <Header />
-            <Clock time={state.clock.time} />
-            <Lots
-              lots={state.auction.lots}
-              favorite={favorite}
-              unfavorite={unfavorite}
-            />
+            <ClockContainer />
+            <LotsContainer />
           </div>
         );
       }
@@ -267,6 +274,19 @@
         return <img className="logo" src="logo.png" />;
       }
 
+      function ClockContainer() {
+        return (
+          <StoreContext.Consumer>
+            {(store) => {
+              const state = store.getState();
+              const time = state.clock.time;
+
+              return <Clock time={time} />;
+            }}
+          </StoreContext.Consumer>
+        );
+      }
+
       function Clock({ time }) {
         const isDay = time.getHours() >= 7 && time.getHours() <= 21;
 
@@ -278,7 +298,20 @@
         );
       }
 
-      function Lots({ lots, favorite, unfavorite }) {
+      function LotsContainer() {
+        return (
+          <StoreContext.Consumer>
+            {(store) => {
+              const state = store.getState();
+              const lots = state.auction.lots;
+
+              return <Lots lots={lots} />;
+            }}
+          </StoreContext.Consumer>
+        );
+      }
+
+      function Lots({ lots }) {
         if (!lots) {
           return <Loading />;
         }
@@ -286,22 +319,41 @@
         return (
           <div className="lots">
             {lots.map((lot) => (
-              <Lot
-                lot={lot}
-                key={lot.id}
-                favorite={favorite}
-                unfavorite={unfavorite}
-              />
+              <LotContainer lot={lot} />
             ))}
           </div>
         );
       }
 
-      function Lot({ lot, key, favorite, unfavorite }) {
+      function LotContainer({ lot }) {
+        return (
+          <StoreContext.Consumer>
+            {(store) => {
+              const favorite = (id) => {
+                API.post(`/lots/${id}/favorite`).then(() => {
+                  store.dispatch(favoriteLot(id));
+                });
+              };
+
+              const unfavorite = (id) => {
+                API.post(`/lots/${id}/unfavorite`).then(() => {
+                  store.dispatch(unfavoriteLot(id));
+                });
+              };
+
+              return (
+                <Lot lot={lot} favorite={favorite} unfavorite={unfavorite} />
+              );
+            }}
+          </StoreContext.Consumer>
+        );
+      }
+
+      function Lot({ lot, favorite, unfavorite }) {
         return (
           <article
             className={"lot" + " " + (lot.favorite ? "favorite" : "")}
-            key={key}
+            key={lot.id}
           >
             <div className="price">{lot.price}</div>
             <h1>{lot.title}</h1>
@@ -321,12 +373,12 @@
 
       function Favorite({ active, favorite, unfavorite }) {
         return active ? (
-          <button type="button" className="unfavorite" onclick={unfavorite}>
+          <button type="button" className="unfavorite" onClick={unfavorite}>
             <ion-icon name="heart-sharp" />
             Unfavorite
           </button>
         ) : (
-          <button type="button" className="favorite" onclick={favorite}>
+          <button type="button" className="favorite" onClick={favorite}>
             <ion-icon name="heart-outline" />
             Favorite
           </button>
@@ -454,24 +506,10 @@
       }
 
       function renderView(store) {
-        const favorite = (id) => {
-          API.post(`/lots/${id}/favorite`).then(() => {
-            store.dispatch(favoriteLot(id));
-          });
-        };
-
-        const unfavorite = (id) => {
-          API.post(`/lots/${id}/unfavorite`).then(() => {
-            store.dispatch(unfavoriteLot(id));
-          });
-        };
-
-        render(
-          <App
-            state={store.getState()}
-            favorite={favorite}
-            unfavorite={unfavorite}
-          />,
+        ReactDOM.render(
+          <StoreContext.Provider value={store}>
+            <App />
+          </StoreContext.Provider>,
           document.getElementById("root")
         );
       }
@@ -498,6 +536,33 @@
         });
       });
     </script>
+
+    <!-- <script>
+      mocha.setup("bdd");
+      const assert = chai.assert;
+
+      describe("Clock", () => {
+        it("Time of day", () => {
+          const container = document.createElement("div");
+          render(<Clock time={new Date("2025-05-05T14:12:31")} />, container);
+
+          const clock = container.querySelector(".clock");
+          assert.equal(clock.querySelector(".value").innerText, "2:12:31 PM");
+          assert.equal(clock.querySelector(".icon").className, "icon day");
+        });
+
+        it("Time of night", () => {
+          const container = document.createElement("div");
+          render(<Clock time={new Date("2025-05-05T03:24:12")} />, container);
+
+          const clock = container.querySelector(".clock");
+          assert.equal(clock.querySelector(".value").innerText, "3:24:12 AM");
+          assert.equal(clock.querySelector(".icon").className, "icon night");
+        });
+      });
+
+      mocha.run();
+    </script> -->
 
     <!-- <script>
       function convertToBrowserJs(code) {
